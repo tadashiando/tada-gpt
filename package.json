@@ -2,21 +2,23 @@
   "name": "format-messages",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "api.ts",
   "author": "Tadashi Ando",
   "license": "ISC",
-  "type": "module",
   "scripts": {
-    "build": "node index.js",
+    "start": "tsc && node dist/api.js",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "compromise": "^14.14.3",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "serverless-http": "^3.2.0"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0"
+    "@types/express": "^5.0.0",
+    "typescript": "^5.7.3"
   }
 }
