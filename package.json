@@ -1,0 +1,21 @@
+{
+  "name": "format-messages",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "Tadashi Ando",
+  "license": "ISC",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "compromise": "^14.14.3",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "serverless-http": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0"
+  }
+}
