@@ -6,16 +6,20 @@
   "author": "Tadashi Ando",
   "license": "ISC",
   "scripts": {
-    "start": "tsc && node dist/api.js",
+    "start": "node netlify/functions/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only server.ts",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "compromise": "^14.14.3",
+    "@netlify/functions": "^3.0.0",
+    "axios": "^1.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "serverless-http": "^3.2.0"
+    "nodemon": "^3.1.9",
+    "serverless-http": "^3.2.0",
+    "ts-node-dev": "^2.0.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
