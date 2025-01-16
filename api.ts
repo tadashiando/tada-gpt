@@ -1,20 +1,26 @@
+import "./envConfig";
 import express from "express";
-import dotenv from "dotenv";
 import serverless from "serverless-http";
 import cors from "cors";
 import routes from "./routes/index.js";
 
-dotenv.config();
 const app = express();
 
 app.use(express.json());
 
-app.use(cors());
+var whitelist = ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://tadagpt.netlify.app']
+var corsOptions = {
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  }
+}
 
-app.use("/api", routes); // Prefix all routes with '/api'
+app.use(cors(corsOptions));
 
-/* // Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); */
+app.use("/api", routes);
 
 export const handler = serverless(app);
