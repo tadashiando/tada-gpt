@@ -8,16 +8,25 @@ const app = express();
 
 app.use(express.json());
 
-var whitelist = ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://tadagpt.netlify.app']
-var corsOptions = {
-  origin: function (origin, callback) {
-    if (whitelist.indexOf(origin) !== -1) {
-      callback(null, true)
+const whitelist = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://tadagpt.netlify.app",
+];
+
+const corsOptions = {
+  origin: function (requestOrigin, callback) {
+    console.log(requestOrigin);
+    const isWhitelisted = whitelist.includes(requestOrigin);
+    if (isWhitelisted) {
+      callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'))
+      callback(new Error("Not allowed by CORS"));
     }
-  }
-}
+  },
+};
 
 app.use(cors(corsOptions));
 

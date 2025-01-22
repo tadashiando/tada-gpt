@@ -16,6 +16,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
       password
     );
     const token = await userCredential.user?.getIdToken();
+
     res.json({ token });
   } catch (error) {
     res.status(400).json({ error: error.message });

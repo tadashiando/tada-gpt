@@ -6,7 +6,7 @@
   "author": "Tadashi Ando",
   "license": "ISC",
   "scripts": {
-    "start": "node netlify/functions/server.js",
+    "start": "node netlify/functions/api.js",
     "dev": "ts-node-dev --respawn --transpile-only server.ts",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -18,7 +18,8 @@
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "firebase": "^11.1.0",
+    "firebase": "^11.2.0",
+    "firebase-admin": "^13.0.2",
     "jsonwebtoken": "^9.0.2",
     "nodemon": "^3.1.9",
     "openai": "^4.78.1",
