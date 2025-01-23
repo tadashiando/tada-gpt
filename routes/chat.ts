@@ -70,29 +70,63 @@ router.post("/assistant", async (req: Request, res: Response) => {
       return;
     }
 
-    // Se não houver erros nas validações
-    const messages = [];
-    messages.push({ role: "user", content: message });
+    // Configurando a resposta para streaming
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
 
-    // Requisição ao OpenAI
-    const response = await client.beta.threads.messages.create(thread, {
+    // Criação da mensagem para o OpenAI
+    await client.beta.threads.messages.create(thread, {
       role: "user",
       content: message,
     });
 
-    let run = await client.beta.threads.runs.createAndPoll(thread, {
+    // Streaming para obter resposta do OpenAI
+    const run = client.beta.threads.runs.stream(thread, {
       assistant_id: assistant,
     });
 
-    if (run.status === "completed") {
-      const messages = await client.beta.threads.messages.list(run.thread_id);
-      const reversedMessages = messages.data.reverse();
-      res.json({ response, history: reversedMessages });
-    } else {
-      console.log(run.status);
-      res.status(500).json({ error: "Erro interno ao se comunicar com o GPT." });
-    }
+    run.on("textCreated", (text) => {
+      res.write(`data: ${text}\n\n`);
+    });
 
+    run.on("textDelta", (textDelta) => {
+      res.write(`data: ${textDelta.value}\n\n`);
+    });
+
+    run.on("toolCallCreated", (toolCall) => {
+      res.write(`data: Assistant called a tool: ${toolCall.type}\n\n`);
+    });
+
+    run.on("toolCallDelta", (toolCallDelta) => {
+      if (toolCallDelta.type === "code_interpreter") {
+        if (toolCallDelta.code_interpreter.input) {
+          res.write(
+            `data: Code input: ${toolCallDelta.code_interpreter.input}\n\n`
+          );
+        }
+        if (toolCallDelta.code_interpreter.outputs) {
+          toolCallDelta.code_interpreter.outputs.forEach((output) => {
+            if (output.type === "logs") {
+              res.write(`data: Log output: ${output.logs}\n\n`);
+            }
+          });
+        }
+      }
+    });
+
+    run.on("error", (error) => {
+      console.error("Error in streaming: ", error);
+      res.write(`data: Error occurred: ${error.message}\n\n`);
+      res.end();
+    });
+
+    // AO FINALIZAR O STREAM, você pode decidir se quer enviar uma mensagem ou não
+    run.on("end", async () => {
+      // Você pode adicionar um final ou limpar a conexão da maneira que preferir
+      res.write(`data: Streaming finalizado.\n\n`);
+      res.end(); // Finaliza a conexão
+    });
   } catch (error) {
     console.error("Erro ao se comunicar com o GPT:", error);
     res.status(500).json({ error: "Erro interno ao se comunicar com o GPT." });
