@@ -37,7 +37,9 @@ router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const thread = await client.beta.threads.retrieve(id);
-    res.json({ assistant: thread });
+    const threadMessages = await client.beta.threads.messages.list(id);
+    const messages = threadMessages.data.reverse();
+    res.json({ thread, messages });
   } catch (error) {
     console.error("Erro ao se comunicar com o GPT:", error);
     res.status(500).json({ error: "Erro interno ao se comunicar com o GPT." });
