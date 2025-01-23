@@ -18,7 +18,7 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
     const thread = await client.beta.threads.create();
     const uuid = crypto.randomUUID();
 
-    await update(child(threadsRef, req.user.uid), {
+    await update(child(threadsRef, "/"), {
       [uuid]: {
         threadId: thread.id,
         assistantId: assistant,
@@ -48,7 +48,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 
 router.get("/", authenticateToken, async (req: Request, res: Response) => {
   try {
-    await get(child(threadsRef, req.user.uid)).then((snapshot) => {
+    await get(child(threadsRef, "/")).then((snapshot) => {
       if (snapshot.exists()) {
         const threads = snapshot.val();
         res.json({ threads });
@@ -59,6 +59,17 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ error: "Erro interno ao se comunicar com Firebase" });
+  }
+});
+
+router.delete("/:id", authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const thread = await client.beta.threads.del(id);
+    res.json({ thread });
+  } catch (error) {
+    console.error("Erro ao deletar thread.", error);
+    res.status(500).json({ error: "Erro ao deletar thread." });
   }
 });
 
