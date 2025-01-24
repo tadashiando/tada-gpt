@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import OpenAi from "openai";
 import crypto from "crypto";
 import { database } from "../firebase";
-import { ref, set, child, get, update, push } from "firebase/database";
+import { ref, child, get, update } from "firebase/database";
 import { authenticateToken } from "../middlewares/authentication";
 
 const router = express.Router();
@@ -12,6 +12,7 @@ const client = new OpenAi({
 });
 const threadsRef = ref(database, "threads");
 
+// Cria uma nova thread
 router.post("/", authenticateToken, async (req: Request, res: Response) => {
   const { assistant } = req.body;
   try {
@@ -22,17 +23,25 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
       [uuid]: {
         threadId: thread.id,
         assistantId: assistant,
-        createdAt: thread.created_at
-      }
+        createdAt: thread.created_at,
+      },
     });
 
     res.json({ thread });
   } catch (error) {
-    console.error("Erro ao se comunicar com o GPT:", error);
-    res.status(500).json({ error: "Erro interno ao se comunicar com o GPT." });
+    if (error instanceof Error) {
+      console.error("Erro ao criar a Thread no Firebase", error);
+      res.status(500).json({
+        message: "Erro ao criar a Thread no Firebase",
+        error: error.message,
+      });
+    } else {
+      res.status(400).json({ message: error });
+    }
   }
 });
 
+// Recupera uma thread com as suas mensagens
 router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -41,11 +50,19 @@ router.get("/:id", async (req: Request, res: Response) => {
     const messages = threadMessages.data.reverse();
     res.json({ thread, messages });
   } catch (error) {
-    console.error("Erro ao se comunicar com o GPT:", error);
-    res.status(500).json({ error: "Erro interno ao se comunicar com o GPT." });
+    if (error instanceof Error) {
+      console.error("Erro ao recuperar a Thread", error);
+      res.status(500).json({
+        message: "Erro ao recuperar a Thread",
+        error: error.message,
+      });
+    } else {
+      res.status(400).json({ message: error });
+    }
   }
 });
 
+// Recupera todas as threads
 router.get("/", authenticateToken, async (req: Request, res: Response) => {
   try {
     await get(child(threadsRef, "/")).then((snapshot) => {
@@ -55,22 +72,39 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error("Erro ao recuperar lista de threads", error);
-    res
-      .status(500)
-      .json({ error: "Erro interno ao se comunicar com Firebase" });
+    if (error instanceof Error) {
+      console.error("Erro ao recuperar todas as Threads de Firebase", error);
+      res.status(500).json({
+        message: "Erro ao recuperar todas as Threads de Firebase",
+        error: error.message,
+      });
+    } else {
+      res.status(400).json({ message: error });
+    }
   }
 });
 
-router.delete("/:id", authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const thread = await client.beta.threads.del(id);
-    res.json({ thread });
-  } catch (error) {
-    console.error("Erro ao deletar thread.", error);
-    res.status(500).json({ error: "Erro ao deletar thread." });
+// Deleta uma thread
+router.delete(
+  "/:id",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const thread = await client.beta.threads.del(id);
+      res.json({ thread });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Erro ao deletar thread.", error);
+        res.status(500).json({
+          message: "Erro ao deletar thread.",
+          error: error.message,
+        });
+      } else {
+        res.status(400).json({ message: error });
+      }
+    }
   }
-});
+);
 
 export default router;

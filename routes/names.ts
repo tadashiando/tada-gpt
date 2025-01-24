@@ -12,10 +12,14 @@ router.get("/extract-first-name/:string", async (req, res) => {
       { headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` } }
     );
     const name = response.data.entities["wit_name:wit_name"][0].body;
-    
+
     res.status(201).json({ name });
-  } catch (err) {
-    res.status(500).json({ message: "Error getting name", error: err.message });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({ message: error.message });
+    } else {
+      res.status(400).json({ message: error });
+    }
   }
 });
 

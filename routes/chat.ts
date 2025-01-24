@@ -7,6 +7,7 @@ const client = new OpenAi({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Envia mensagens junto com o histórico
 router.post("/", async (req: Request, res: Response) => {
   try {
     const { message, history, model } = req.body;
@@ -45,12 +46,76 @@ router.post("/", async (req: Request, res: Response) => {
 
     res.json({ response, history: messages });
   } catch (error) {
-    console.error("Erro ao se comunicar com o GPT:", error);
-    res.status(500).json({ error: "Erro interno ao se comunicar com o GPT." });
+    if (error instanceof Error) {
+      console.error("Erro ao enviar mensagem", error);
+      res.status(500).json({
+        message: "Erro ao enviar mensagem",
+        error: error.message,
+      });
+    } else {
+      res.status(400).json({ message: error });
+    }
   }
 });
 
+// Envia mensagens ao assistente
 router.post("/assistant", async (req: Request, res: Response) => {
+  try {
+    const { message, thread, assistant } = req.body;
+
+    // Validação básica e interrupção caso necessário
+    if (!message || typeof message !== "string") {
+      res.status(400).json({ error: "Mensagem inválida ou ausente." });
+      return;
+    }
+
+    if (!thread || typeof thread !== "string") {
+      res.status(400).json({ error: "Thread inválido ou ausente." });
+      return;
+    }
+
+    if (!assistant || typeof assistant !== "string") {
+      res.status(400).json({ error: "Id de assistente inválido ou ausente." });
+      return;
+    }
+
+    // Requisição ao OpenAI
+    await client.beta.threads.messages.create(thread, {
+      role: "user",
+      content: message,
+    });
+
+    const run = await client.beta.threads.runs.createAndPoll(thread, {
+      assistant_id: assistant,
+    });
+
+    if (run.status === "completed") {
+      const messages = await client.beta.threads.messages.list(run.thread_id);
+      const reversedMessages = messages.data.reverse();
+      res.json({ history: reversedMessages });
+    } else {
+      console.log(run.status);
+      res
+        .status(500)
+        .json({ error: "Erro interno ao se comunicar com o GPT." });
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(
+        "Erro ao enviar mensagem ao assistente",
+        error
+      );
+      res.status(500).json({
+        message: "Erro ao enviar mensagem ao assistente",
+        error: error.message,
+      });
+    } else {
+      res.status(400).json({ message: error });
+    }
+  }
+});
+
+/* router.post("/assistant", async (req: Request, res: Response) => {
   try {
     const { message, thread, assistant } = req.body;
 
@@ -87,6 +152,8 @@ router.post("/assistant", async (req: Request, res: Response) => {
     });
 
     run.on("textCreated", (text) => {
+      console.log(text);
+
       res.write(`data: ${text}\n\n`);
     });
 
@@ -121,9 +188,7 @@ router.post("/assistant", async (req: Request, res: Response) => {
       res.end();
     });
 
-    // AO FINALIZAR O STREAM, você pode decidir se quer enviar uma mensagem ou não
     run.on("end", async () => {
-      // Você pode adicionar um final ou limpar a conexão da maneira que preferir
       res.write(`data: Streaming finalizado.\n\n`);
       res.end(); // Finaliza a conexão
     });
@@ -131,6 +196,6 @@ router.post("/assistant", async (req: Request, res: Response) => {
     console.error("Erro ao se comunicar com o GPT:", error);
     res.status(500).json({ error: "Erro interno ao se comunicar com o GPT." });
   }
-});
+}); */
 
 export default router;

@@ -1,11 +1,10 @@
 import express, { Request, Response } from "express";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 import { auth } from "../firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 const router = express.Router();
 
+// Login
 router.post("/login", async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
@@ -19,7 +18,18 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
 
     res.json({ token });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    if (error instanceof Error) {
+      console.error(
+        "Login falhou, verifique suas credenciais",
+        error
+      );
+      res.status(500).json({
+        message: "Login falhou, verifique suas credenciais",
+        error: error.message,
+      });
+    } else {
+      res.status(400).json({ message: error });
+    }
   }
 });
 
