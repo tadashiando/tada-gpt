@@ -5,7 +5,7 @@
     "target": "es6",
     "moduleResolution": "node",
     "sourceMap": true,
-    "outDir": "netlify/functions",
+    "outDir": "dist",
     "typeRoots": ["./node_modules/@types", "./types"],
   },
   "lib": ["es2015"]

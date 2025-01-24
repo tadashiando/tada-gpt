@@ -10,6 +10,7 @@ const client = new OpenAi({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Cria um novo assistente
 router.post("/", async (req: Request, res: Response) => {
   try {
     const { name, instructions, description, tools, model } = req.body;
@@ -29,11 +30,19 @@ router.post("/", async (req: Request, res: Response) => {
 
     res.json({ assistant });
   } catch (error) {
-    console.error("Erro ao se comunicar com o GPT:", error);
-    res.status(500).json({ error: "Erro interno ao se comunicar com o GPT." });
+    if (error instanceof Error) {
+      console.error("Erro ao criar um novo assistente", error);
+      res.status(500).json({
+        message: "Erro ao criar um novo assistente",
+        error: error.message,
+      });
+    } else {
+      res.status(400).json({ message: error });
+    }
   }
 });
 
+// Recupera um assistente com as suas threads
 router.get(
   "/:assistantId",
   authenticateToken,
@@ -67,20 +76,40 @@ router.get(
 
       res.json({ assistant, threads });
     } catch (error) {
-      res
-        .status(500)
-        .json({ message: "Error retrieve assistant and threads", error });
+      if (error instanceof Error) {
+        console.error(
+          "Erro ao recuperar um assistente com suas threads",
+          error
+        );
+        res.status(500).json({
+          message: "Erro ao recuperar um assistente com suas threads",
+          error: error.message,
+        });
+      } else {
+        res.status(400).json({ message: error });
+      }
     }
   }
 );
 
+// Recupera todos os assistentes
 router.get("/", async (req: Request, res: Response) => {
   try {
     const assistants = await client.beta.assistants.list();
     res.json({ assistants });
   } catch (error) {
-    console.error("Erro ao se comunicar com o GPT:", error);
-    res.status(500).json({ error: "Erro interno ao se comunicar com o GPT." });
+    if (error instanceof Error) {
+      console.error(
+        "Erro ao recuperar uma lista de assistentes",
+        error
+      );
+      res.status(500).json({
+        message: "Erro ao recuperar uma lista de assistentes",
+        error: error.message,
+      });
+    } else {
+      res.status(400).json({ message: error });
+    }
   }
 });
 

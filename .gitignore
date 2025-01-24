@@ -128,8 +128,3 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-
-# Local Netlify folder
-.netlify
-netlify
-tadagpt-firebase-adminsdk-gb7ot-daa528ea38.json

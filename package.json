@@ -2,18 +2,17 @@
   "name": "tada-ai",
   "version": "1.0.0",
   "description": "",
-  "main": "api.ts",
+  "main": "server.ts",
   "author": "Tadashi Ando",
   "license": "ISC",
   "scripts": {
-    "start": "node netlify/functions/api.js",
+    "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only server.ts",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.33.0",
-    "@netlify/functions": "^3.0.0",
     "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
