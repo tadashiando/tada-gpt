@@ -8,13 +8,13 @@ export const authenticateToken = async (
   next: NextFunction
 ): Promise<void> => {
   const token = req.header("Authorization")?.split(" ")[1];
-  
+
   if (!token) {
     res.status(401).json({ message: "Access denied" });
     return;
   }
   if (!isTokenStructureValid(token)) {
-    res.status(403).json({ message: 'Invalid token structure' });
+    res.status(403).json({ message: "Invalid token structure" });
     return;
   }
 
@@ -27,7 +27,7 @@ export const authenticateToken = async (
 
     next();
   } catch (error) {
-    console.error('Erro ao verificar o token:', JSON.stringify(error, null, 2)); // Log detalhado
+    console.error("Erro ao verificar o token:", JSON.stringify(error, null, 2));
     res.status(401).json({ message: "Invalid token", error });
     return;
   }
@@ -45,10 +45,12 @@ const isTokenStructureValid = (token: string): boolean => {
 const verifyTokenWithTimeout = async (token: string, timeout: number) => {
   return new Promise((resolve, reject) => {
     const timeoutHandle = setTimeout(() => {
-      reject(new Error('Tempo limite excedido ao verificar o token.'));
+      reject(new Error("Tempo limite excedido ao verificar o token."));
     }, timeout);
 
-    admin.auth().verifyIdToken(token)
+    admin
+      .auth()
+      .verifyIdToken(token)
       .then((decodedToken) => {
         clearTimeout(timeoutHandle);
         resolve(decodedToken);

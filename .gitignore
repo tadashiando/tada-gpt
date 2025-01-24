@@ -6,6 +6,11 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
+firebase-debug.log*
+firebase-debug.*.log*
+
+# Firebase cache
+.firebase/
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
@@ -40,6 +45,7 @@ build/Release
 
 # Dependency directories
 node_modules/
+functions/node_modules/
 jspm_packages/
 
 # Snowpack dependency directory (https://snowpack.dev/)
@@ -129,7 +135,5 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-# Local Netlify folder
-.netlify
-netlify
-tadagpt-firebase-adminsdk-gb7ot-daa528ea38.json
+# Compiled JavaScript files
+functions/lib
