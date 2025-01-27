@@ -13,19 +13,15 @@ const whitelist = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "https://tadagpt.onrender.com",
-  "https://tadagpt.netlify.app"
+  "https://tadagpt.netlify.app",
 ];
 
 const corsOptions = {
   origin: function (requestOrigin, callback) {
-    if (requestOrigin) {
-      console.log(requestOrigin);
-      const isWhitelisted = whitelist.includes(requestOrigin);
-      if (isWhitelisted) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
+    if (!requestOrigin || whitelist.indexOf(requestOrigin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
     }
   },
 };
