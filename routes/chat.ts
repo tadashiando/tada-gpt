@@ -32,17 +32,33 @@ router.post("/", async (req: Request, res: Response) => {
     const messages = history || [];
     messages.push({ role: "user", content: message });
 
+    let response;
     // Requisição ao OpenAI
-    const response = await client.chat.completions.create({
-      model,
-      messages,
-    });
+    if (model.startsWith("dall")) {
+      response = await client.images.generate({
+        model,
+        prompt: message,
+        n: 1,
+        size: "1024x1024",
+      });
 
-    // Atualizando o histórico com a resposta do bot
-    messages.push({
-      role: "assistant",
-      content: response.choices?.[0]?.message?.content,
-    });
+      // Atualizando o histórico com a resposta do bot
+      messages.push({
+        role: "assistant",
+        content: response.data,
+      });
+    } else {
+      response = await client.chat.completions.create({
+        model,
+        messages,
+      });
+  
+      // Atualizando o histórico com a resposta do bot
+      messages.push({
+        role: "assistant",
+        content: response.choices?.[0]?.message?.content,
+      });
+    }
 
     res.json({ response, history: messages });
   } catch (error) {
