@@ -9,12 +9,14 @@ router.get("/extract-first-name/:string", async (req, res) => {
   try {
     const response = await axios.get(
       `https://api.wit.ai/message?v=20250111&q=${string}`,
-      { headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` } }
+      { headers: { Authorization: `Bearer ${process.env.WIT_API_KEY}` } }
     );
     const name = response.data.entities["wit_name:wit_name"][0].body;
 
     res.status(201).json({ name });
   } catch (error) {
+    console.log(error);
+    
     if (error instanceof Error) {
       res.status(400).json({ message: error.message });
     } else {
