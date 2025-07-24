@@ -14,6 +14,7 @@ const whitelist = [
   "http://127.0.0.1:3000",
   "https://tadagpt.onrender.com",
   "https://tadagpt.netlify.app",
+  "https://tada-gpt-production.up.railway.app",
 ];
 
 const corsOptions = {
