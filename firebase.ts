@@ -33,7 +33,7 @@ const firebaseAdminConfig = {
   universeDomain: process.env.FIREBASE_ADMIN_UNIVERSE_DOMAIN,
 };
 
-// Inicializando o Firebase Admin SDK
+// Inicializando o Firebase Admin SDK (só para autenticação de tokens)
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(firebaseAdminConfig),
@@ -41,7 +41,7 @@ if (!admin.apps.length) {
   });
 }
 
-// Initialize Firebase
+// Initialize Firebase (client-side - o que já funcionava)
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const database = getDatabase(app);
