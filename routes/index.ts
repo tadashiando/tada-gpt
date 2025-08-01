@@ -4,6 +4,8 @@ import assistantRoutes from "./assistant";
 import authRoutes from "./auth";
 import chatRoutes from "./chat";
 import clientRoutes from "./clients";
+import clientAssistantRoutes from "./client-assistants";
+import functionCallingRoutes from "./function-calling";
 import namesRoutes from "./names";
 import threadRoutes from "./thread";
 
@@ -13,6 +15,8 @@ router.use("/assistant", assistantRoutes);
 router.use("/auth", authRoutes);
 router.use("/chat", chatRoutes);
 router.use("/clients", clientRoutes);
+router.use("/clients", clientAssistantRoutes);
+router.use("/functions", functionCallingRoutes);
 router.use("/names", namesRoutes);
 router.use("/thread", threadRoutes);
 

@@ -1,7 +1,12 @@
 import express, { Request, Response } from "express";
+import axios from "axios";
+import { ref, child, get } from "firebase/database";
 import OpenAi from "openai";
+import { database } from "../firebase";
 
 const router = express.Router();
+const clientsRef = ref(database, "clients");
+
 // Configuração do OpenAI
 const client = new OpenAi({
   apiKey: process.env.OPENAI_API_KEY,
@@ -52,7 +57,7 @@ router.post("/", async (req: Request, res: Response) => {
         model,
         messages,
       });
-  
+
       // Atualizando o histórico com a resposta do bot
       messages.push({
         role: "assistant",
@@ -74,10 +79,10 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-// Envia mensagens ao assistente
+// Envia mensagens ao assistente (COM FUNCTION CALLING)
 router.post("/assistant", async (req: Request, res: Response) => {
   try {
-    const { message, thread, assistant } = req.body;
+    const { message, thread, assistant, clientId, assistantId } = req.body;
 
     // Validação básica e interrupção caso necessário
     if (!message || typeof message !== "string") {
@@ -95,32 +100,42 @@ router.post("/assistant", async (req: Request, res: Response) => {
       return;
     }
 
-    // Requisição ao OpenAI
+    // Criar mensagem do usuário
     await client.beta.threads.messages.create(thread, {
       role: "user",
       content: message,
     });
 
+    // Criar e executar run
     const run = await client.beta.threads.runs.createAndPoll(thread, {
       assistant_id: assistant,
     });
 
+    // Lidar com diferentes status do run
     if (run.status === "completed") {
       const messages = await client.beta.threads.messages.list(run.thread_id);
       const reversedMessages = messages.data.reverse();
       res.json({ history: reversedMessages });
+    } else if (run.status === "requires_action") {
+      // FUNCTION CALLING: O assistente quer chamar uma função
+      await handleFunctionCalling(
+        run,
+        thread,
+        assistant,
+        clientId,
+        assistantId,
+        res
+      );
     } else {
-      console.log(run.status);
-      res
-        .status(500)
-        .json({ error: "Erro interno ao se comunicar com o GPT." });
+      console.log("Run status:", run.status);
+      res.status(500).json({
+        error: "Erro interno ao se comunicar com o GPT.",
+        status: run.status,
+      });
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.error(
-        "Erro ao enviar mensagem ao assistente",
-        error
-      );
+      console.error("Erro ao enviar mensagem ao assistente", error);
       res.status(500).json({
         message: "Erro ao enviar mensagem ao assistente",
         error: error.message,
@@ -131,87 +146,269 @@ router.post("/assistant", async (req: Request, res: Response) => {
   }
 });
 
-/* router.post("/assistant", async (req: Request, res: Response) => {
+// Função para lidar com function calling
+async function handleFunctionCalling(
+  run: any,
+  threadId: string,
+  assistantId: string,
+  clientId: string,
+  localAssistantId: string,
+  res: Response
+) {
   try {
-    const { message, thread, assistant } = req.body;
+    const toolCalls =
+      run.required_action?.submit_tool_outputs?.tool_calls || [];
+    const toolOutputs = [];
 
-    // Validação básica e interrupção caso necessário
-    if (!message || typeof message !== "string") {
-      res.status(400).json({ error: "Mensagem inválida ou ausente." });
-      return;
-    }
+    // Executar cada função chamada pelo assistente
+    for (const toolCall of toolCalls) {
+      if (toolCall.type === "function") {
+        const functionName = toolCall.function.name;
+        const functionArgs = JSON.parse(toolCall.function.arguments);
 
-    if (!thread || typeof thread !== "string") {
-      res.status(400).json({ error: "Thread inválido ou ausente." });
-      return;
-    }
+        console.log(`Executando função: ${functionName}`, functionArgs);
 
-    if (!assistant || typeof assistant !== "string") {
-      res.status(400).json({ error: "Id de assistente inválido ou ausente." });
-      return;
-    }
-
-    // Configurando a resposta para streaming
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-
-    // Criação da mensagem para o OpenAI
-    await client.beta.threads.messages.create(thread, {
-      role: "user",
-      content: message,
-    });
-
-    // Streaming para obter resposta do OpenAI
-    const run = client.beta.threads.runs.stream(thread, {
-      assistant_id: assistant,
-    });
-
-    run.on("textCreated", (text) => {
-      console.log(text);
-
-      res.write(`data: ${text}\n\n`);
-    });
-
-    run.on("textDelta", (textDelta) => {
-      res.write(`data: ${textDelta.value}\n\n`);
-    });
-
-    run.on("toolCallCreated", (toolCall) => {
-      res.write(`data: Assistant called a tool: ${toolCall.type}\n\n`);
-    });
-
-    run.on("toolCallDelta", (toolCallDelta) => {
-      if (toolCallDelta.type === "code_interpreter") {
-        if (toolCallDelta.code_interpreter.input) {
-          res.write(
-            `data: Code input: ${toolCallDelta.code_interpreter.input}\n\n`
+        try {
+          // Executar a função usando nossa rota de function calling
+          const functionResult = await executeFunctionCall(
+            clientId,
+            localAssistantId,
+            functionName,
+            functionArgs
           );
-        }
-        if (toolCallDelta.code_interpreter.outputs) {
-          toolCallDelta.code_interpreter.outputs.forEach((output) => {
-            if (output.type === "logs") {
-              res.write(`data: Log output: ${output.logs}\n\n`);
-            }
+
+          toolOutputs.push({
+            tool_call_id: toolCall.id,
+            output: JSON.stringify(functionResult),
+          });
+        } catch (functionError) {
+          console.error(
+            `Erro ao executar função ${functionName}:`,
+            functionError
+          );
+          toolOutputs.push({
+            tool_call_id: toolCall.id,
+            output: JSON.stringify({
+              erro: `Falha ao executar ${functionName}: ${functionError}`,
+            }),
           });
         }
       }
-    });
+    }
 
-    run.on("error", (error) => {
-      console.error("Error in streaming: ", error);
-      res.write(`data: Error occurred: ${error.message}\n\n`);
-      res.end();
-    });
+    // Submeter os resultados das funções de volta para o OpenAI
+    const finalRun = await client.beta.threads.runs.submitToolOutputsAndPoll(
+      threadId,
+      run.id,
+      { tool_outputs: toolOutputs }
+    );
 
-    run.on("end", async () => {
-      res.write(`data: Streaming finalizado.\n\n`);
-      res.end(); // Finaliza a conexão
-    });
+    if (finalRun.status === "completed") {
+      const messages = await client.beta.threads.messages.list(threadId);
+      const reversedMessages = messages.data.reverse();
+      res.json({ history: reversedMessages });
+    } else {
+      res.status(500).json({
+        error: "Erro após executar funções",
+        status: finalRun.status,
+      });
+    }
   } catch (error) {
-    console.error("Erro ao se comunicar com o GPT:", error);
-    res.status(500).json({ error: "Erro interno ao se comunicar com o GPT." });
+    console.error("Erro no function calling:", error);
+    res.status(500).json({
+      error: "Erro ao processar function calling",
+      details: error instanceof Error ? error.message : error,
+    });
   }
-}); */
+}
+
+// Função auxiliar para executar function calls
+async function executeFunctionCall(
+  clientId: string,
+  assistantId: string,
+  functionName: string,
+  functionArgs: any
+) {
+  // Buscar assistente e suas funções customizadas
+  const assistantSnapshot = await get(
+    child(clientsRef, `${clientId}/assistants/${assistantId}`)
+  );
+  if (!assistantSnapshot.exists()) {
+    throw new Error("Assistente não encontrado");
+  }
+
+  const assistantData = assistantSnapshot.val();
+  const customFunctions = assistantData.customFunctions || [];
+
+  // Encontrar a função solicitada
+  const targetFunction = customFunctions.find(
+    (func: any) => func.name === functionName
+  );
+  if (!targetFunction) {
+    throw new Error("Função não encontrada");
+  }
+
+  // Executar a função baseada no tipo (reutilizando a lógica da rota function-calling)
+  if (functionName === "buscar_produtos") {
+    return await executeBuscarProdutos(functionArgs, targetFunction);
+  } else if (functionName === "verificar_estoque") {
+    return await executeVerificarEstoque(functionArgs, targetFunction);
+  } else {
+    // Função genérica - chamar o endpoint do cliente
+    return await executeCustomFunction(functionArgs, targetFunction);
+  }
+}
+
+// Reutilizar as funções da rota function-calling
+async function executeBuscarProdutos(args: any, functionConfig: any) {
+  try {
+    if (functionConfig.endpoint) {
+      const response = await axios({
+        method: functionConfig.method || "POST",
+        url: functionConfig.endpoint,
+        data: args,
+        headers: {
+          "Content-Type": "application/json",
+          ...functionConfig.headers,
+        },
+      });
+      return response.data;
+    }
+
+    const { categoria, preco_max, disponivel } = args;
+
+    const produtos = [
+      {
+        id: 1,
+        nome: "Smartphone XYZ",
+        categoria: "eletrônicos",
+        preco: 899.99,
+        disponivel: true,
+      },
+      {
+        id: 2,
+        nome: "Notebook ABC",
+        categoria: "eletrônicos",
+        preco: 2499.99,
+        disponivel: true,
+      },
+      {
+        id: 3,
+        nome: "Camiseta Basic",
+        categoria: "roupas",
+        preco: 49.99,
+        disponivel: false,
+      },
+      {
+        id: 4,
+        nome: "Tênis Sport",
+        categoria: "calçados",
+        preco: 299.99,
+        disponivel: true,
+      },
+    ];
+
+    let resultado = produtos;
+
+    if (categoria) {
+      resultado = resultado.filter((p) =>
+        p.categoria.toLowerCase().includes(categoria.toLowerCase())
+      );
+    }
+
+    if (preco_max) {
+      resultado = resultado.filter((p) => p.preco <= preco_max);
+    }
+
+    if (disponivel !== undefined) {
+      resultado = resultado.filter((p) => p.disponivel === disponivel);
+    }
+
+    return {
+      produtos: resultado,
+      total: resultado.length,
+      filtros_aplicados: { categoria, preco_max, disponivel },
+    };
+  } catch (error) {
+    throw new Error(`Erro ao buscar produtos: ${error}`);
+  }
+}
+
+async function executeVerificarEstoque(args: any, functionConfig: any) {
+  try {
+    if (functionConfig.endpoint) {
+      const response = await axios({
+        method: functionConfig.method || "POST",
+        url: functionConfig.endpoint,
+        data: args,
+        headers: {
+          "Content-Type": "application/json",
+          ...functionConfig.headers,
+        },
+      });
+      return response.data;
+    }
+
+    const { produto_id, produto_nome } = args;
+
+    const estoques = {
+      1: { disponivel: true, quantidade: 15, reservados: 2 },
+      2: { disponivel: true, quantidade: 8, reservados: 1 },
+      3: { disponivel: false, quantidade: 0, reservados: 0 },
+      4: { disponivel: true, quantidade: 25, reservados: 5 },
+    };
+
+    let estoque;
+    if (produto_id) {
+      estoque = estoques[produto_id as keyof typeof estoques];
+    } else if (produto_nome) {
+      const produtos = {
+        "smartphone xyz": 1,
+        "notebook abc": 2,
+        "camiseta basic": 3,
+        "tênis sport": 4,
+      };
+      const id = produtos[produto_nome.toLowerCase() as keyof typeof produtos];
+      estoque = id ? estoques[id as keyof typeof estoques] : null;
+    }
+
+    if (!estoque) {
+      return { erro: "Produto não encontrado" };
+    }
+
+    return {
+      produto_id,
+      produto_nome,
+      ...estoque,
+      disponivel_para_venda: estoque.quantidade - estoque.reservados,
+    };
+  } catch (error) {
+    throw new Error(`Erro ao verificar estoque: ${error}`);
+  }
+}
+
+async function executeCustomFunction(args: any, functionConfig: any) {
+  try {
+    const response = await axios({
+      method: functionConfig.method || "POST",
+      url: functionConfig.endpoint,
+      data: args,
+      headers: {
+        "Content-Type": "application/json",
+        ...functionConfig.headers,
+      },
+      timeout: 10000,
+    });
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        `Erro na requisição: ${error.response?.status} - ${error.response?.statusText}`
+      );
+    }
+    throw error;
+  }
+}
 
 export default router;

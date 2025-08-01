@@ -15,8 +15,23 @@ export interface ClientAssistant {
   instructions: string;
   model: string;
   tools: string[];
+  customFunctions?: CustomFunction[]; // NOVO: funções customizadas
   status: "active" | "inactive";
   createdAt: number;
+}
+
+// NOVO: Interface para funções customizadas
+export interface CustomFunction {
+  name: string;
+  description: string;
+  parameters: {
+    type: string;
+    properties: Record<string, any>;
+    required?: string[];
+  };
+  endpoint: string; // URL do webhook/API do cliente
+  method: "GET" | "POST";
+  headers?: Record<string, string>;
 }
 
 export interface Conversation {
