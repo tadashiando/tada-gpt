@@ -44,6 +44,8 @@ router.post(
         result = await executeBuscarProdutos(functionArgs, targetFunction);
       } else if (functionName === "verificar_estoque") {
         result = await executeVerificarEstoque(functionArgs, targetFunction);
+      } else if (functionName === "analisar_imagem_produto") {
+        result = await executeAnalisarImagem(functionArgs, targetFunction);
       } else {
         // Função genérica - chamar o endpoint do cliente
         result = await executeCustomFunction(functionArgs, targetFunction);
@@ -78,7 +80,7 @@ async function executeBuscarProdutos(args: any, functionConfig: any) {
     }
 
     // Caso contrário, simula dados para demonstração
-    const { categoria, preco_max, disponivel } = args;
+    const { categoria, preco_max, disponivel, palavra_chave } = args;
 
     // MOCK DATA - em produção isso viria do banco do cliente
     const produtos = [
@@ -88,6 +90,7 @@ async function executeBuscarProdutos(args: any, functionConfig: any) {
         categoria: "eletrônicos",
         preco: 899.99,
         disponivel: true,
+        tags: ["smartphone", "celular", "android"],
       },
       {
         id: 2,
@@ -95,6 +98,7 @@ async function executeBuscarProdutos(args: any, functionConfig: any) {
         categoria: "eletrônicos",
         preco: 2499.99,
         disponivel: true,
+        tags: ["notebook", "laptop", "computador"],
       },
       {
         id: 3,
@@ -102,6 +106,7 @@ async function executeBuscarProdutos(args: any, functionConfig: any) {
         categoria: "roupas",
         preco: 49.99,
         disponivel: false,
+        tags: ["camiseta", "roupa", "algodão"],
       },
       {
         id: 4,
@@ -109,6 +114,23 @@ async function executeBuscarProdutos(args: any, functionConfig: any) {
         categoria: "calçados",
         preco: 299.99,
         disponivel: true,
+        tags: ["tênis", "esporte", "corrida"],
+      },
+      {
+        id: 5,
+        nome: "Fone Bluetooth",
+        categoria: "eletrônicos",
+        preco: 199.99,
+        disponivel: true,
+        tags: ["fone", "headphone", "bluetooth"],
+      },
+      {
+        id: 6,
+        nome: "Relógio Digital",
+        categoria: "eletrônicos",
+        preco: 159.99,
+        disponivel: true,
+        tags: ["relógio", "digital", "smartwatch"],
       },
     ];
 
@@ -131,10 +153,20 @@ async function executeBuscarProdutos(args: any, functionConfig: any) {
       resultado = resultado.filter((p) => p.disponivel === disponivel);
     }
 
+    // Filtrar por palavra-chave (busca em nome e tags)
+    if (palavra_chave) {
+      const palavraLower = palavra_chave.toLowerCase();
+      resultado = resultado.filter(
+        (p) =>
+          p.nome.toLowerCase().includes(palavraLower) ||
+          p.tags.some((tag) => tag.toLowerCase().includes(palavraLower))
+      );
+    }
+
     return {
       produtos: resultado,
       total: resultado.length,
-      filtros_aplicados: { categoria, preco_max, disponivel },
+      filtros_aplicados: { categoria, preco_max, disponivel, palavra_chave },
     };
   } catch (error) {
     throw new Error(`Erro ao buscar produtos: ${error}`);
@@ -220,6 +252,155 @@ async function executeCustomFunction(args: any, functionConfig: any) {
       );
     }
     throw error;
+  }
+}
+
+// Função para analisar imagem e buscar produtos similares
+async function executeAnalisarImagem(args: any, functionConfig: any) {
+  try {
+    const { imagem_url, buscar_similares = true } = args;
+
+    // Se o cliente tem endpoint customizado para análise, usa ele
+    if (functionConfig.endpoint) {
+      const response = await axios({
+        method: functionConfig.method || "POST",
+        url: functionConfig.endpoint,
+        data: args,
+        headers: {
+          "Content-Type": "application/json",
+          ...functionConfig.headers,
+        },
+      });
+      return response.data;
+    }
+
+    // Usar OpenAI Vision para analisar a imagem
+    const openai = new (require("openai"))({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    const visionResponse = await openai.chat.completions.create({
+      model: "gpt-4o", // Modelo com suporte a vision
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `Analise esta imagem de produto e me diga:
+              1. Que tipo de produto é (categoria)
+              2. Características principais (cor, formato, estilo)
+              3. Palavras-chave para busca
+              4. Categoria sugerida (eletrônicos, roupas, calçados, decoração, etc.)
+              
+              Responda em formato JSON com as chaves: categoria, caracteristicas, palavras_chave, descricao`,
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: imagem_url,
+              },
+            },
+          ],
+        },
+      ],
+      max_tokens: 500,
+    });
+
+    let analise;
+    try {
+      // Tentar extrair JSON da resposta
+      const conteudo = visionResponse.choices[0]?.message?.content || "";
+      const jsonMatch = conteudo.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        analise = JSON.parse(jsonMatch[0]);
+      } else {
+        // Se não conseguir extrair JSON, criar estrutura baseada no texto
+        analise = {
+          categoria: "produto",
+          caracteristicas: ["analisado por IA"],
+          palavras_chave: ["produto", "item"],
+          descricao: conteudo,
+        };
+      }
+    } catch (parseError) {
+      console.warn("Erro ao parsear resposta da análise:", parseError);
+      analise = {
+        categoria: "produto",
+        caracteristicas: ["produto identificado"],
+        palavras_chave: ["item"],
+        descricao:
+          visionResponse.choices[0]?.message?.content || "Produto analisado",
+      };
+    }
+
+    // Se solicitado, buscar produtos similares
+    let produtos_similares = [];
+    if (buscar_similares && analise.categoria) {
+      try {
+        // Primeiro tentar buscar pela categoria identificada
+        let resultadoBusca = await executeBuscarProdutos(
+          {
+            categoria: analise.categoria.toLowerCase(),
+            disponivel: true,
+          },
+          {}
+        );
+
+        // Se não encontrou, tentar pela categoria sugerida
+        if (
+          resultadoBusca.produtos.length === 0 &&
+          analise.categoria_sugerida
+        ) {
+          resultadoBusca = await executeBuscarProdutos(
+            {
+              categoria: analise.categoria_sugerida.toLowerCase(),
+              disponivel: true,
+            },
+            {}
+          );
+        }
+
+        // Se ainda não encontrou, tentar por palavra-chave
+        if (
+          resultadoBusca.produtos.length === 0 &&
+          analise.palavras_chave?.length > 0
+        ) {
+          resultadoBusca = await executeBuscarProdutos(
+            {
+              palavra_chave: analise.palavras_chave[0],
+              disponivel: true,
+            },
+            {}
+          );
+        }
+
+        produtos_similares = resultadoBusca.produtos || [];
+      } catch (buscaError) {
+        console.warn("Erro ao buscar produtos similares:", buscaError);
+      }
+    }
+
+    return {
+      analise: {
+        imagem_analisada: imagem_url,
+        ...analise,
+      },
+      produtos_similares,
+      total_similares: produtos_similares.length,
+      sugestao:
+        produtos_similares.length > 0
+          ? "Encontrei alguns produtos similares para você!"
+          : "Não encontrei produtos similares no momento, mas posso ajudar você a encontrar algo parecido.",
+    };
+  } catch (error) {
+    console.error("Erro na análise de imagem:", error);
+    return {
+      erro: "Não foi possível analisar a imagem no momento",
+      detalhes: error instanceof Error ? error.message : "Erro desconhecido",
+      sugestao:
+        "Tente descrever o produto que você procura ou envie outra imagem",
+    };
   }
 }
 

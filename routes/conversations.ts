@@ -433,7 +433,7 @@ async function executeFunctionCall(
 
   // Executar função (mock data)
   if (functionName === "buscar_produtos") {
-    const { categoria, preco_max, disponivel } = functionArgs;
+    const { categoria, preco_max, disponivel, palavra_chave } = functionArgs;
     const produtos = [
       {
         id: 1,
@@ -441,6 +441,7 @@ async function executeFunctionCall(
         categoria: "eletrônicos",
         preco: 899.99,
         disponivel: true,
+        tags: ["smartphone", "celular"],
       },
       {
         id: 2,
@@ -448,6 +449,7 @@ async function executeFunctionCall(
         categoria: "eletrônicos",
         preco: 2499.99,
         disponivel: true,
+        tags: ["notebook", "laptop"],
       },
       {
         id: 3,
@@ -455,6 +457,7 @@ async function executeFunctionCall(
         categoria: "roupas",
         preco: 49.99,
         disponivel: false,
+        tags: ["camiseta", "roupa"],
       },
       {
         id: 4,
@@ -462,6 +465,15 @@ async function executeFunctionCall(
         categoria: "calçados",
         preco: 299.99,
         disponivel: true,
+        tags: ["tênis", "esporte"],
+      },
+      {
+        id: 5,
+        nome: "Fone Bluetooth",
+        categoria: "eletrônicos",
+        preco: 199.99,
+        disponivel: true,
+        tags: ["fone", "headphone"],
       },
     ];
 
@@ -473,6 +485,14 @@ async function executeFunctionCall(
     if (preco_max) resultado = resultado.filter((p) => p.preco <= preco_max);
     if (disponivel !== undefined)
       resultado = resultado.filter((p) => p.disponivel === disponivel);
+    if (palavra_chave) {
+      const palavraLower = palavra_chave.toLowerCase();
+      resultado = resultado.filter(
+        (p) =>
+          p.nome.toLowerCase().includes(palavraLower) ||
+          p.tags.some((tag) => tag.toLowerCase().includes(palavraLower))
+      );
+    }
 
     return { produtos: resultado, total: resultado.length };
   }
@@ -483,10 +503,46 @@ async function executeFunctionCall(
       2: { disponivel: true, quantidade: 8, reservados: 1 },
       3: { disponivel: false, quantidade: 0, reservados: 0 },
       4: { disponivel: true, quantidade: 25, reservados: 5 },
+      5: { disponivel: true, quantidade: 12, reservados: 1 },
     };
 
     const estoque = estoques[functionArgs.produto_id as keyof typeof estoques];
     return estoque || { erro: "Produto não encontrado" };
+  }
+
+  if (functionName === "analisar_imagem_produto") {
+    // Para demo, simular análise de imagem
+    return {
+      analise: {
+        imagem_analisada: functionArgs.imagem_url,
+        categoria: "eletrônicos",
+        caracteristicas: [
+          "produto tecnológico",
+          "cor escura",
+          "formato retangular",
+        ],
+        palavras_chave: ["smartphone", "celular", "eletrônico"],
+        descricao: "Produto eletrônico identificado na imagem",
+      },
+      produtos_similares: [
+        {
+          id: 1,
+          nome: "Smartphone XYZ",
+          categoria: "eletrônicos",
+          preco: 899.99,
+          disponivel: true,
+        },
+        {
+          id: 5,
+          nome: "Fone Bluetooth",
+          categoria: "eletrônicos",
+          preco: 199.99,
+          disponivel: true,
+        },
+      ],
+      total_similares: 2,
+      sugestao: "Encontrei alguns produtos similares para você!",
+    };
   }
 
   throw new Error("Função não implementada");
