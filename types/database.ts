@@ -38,10 +38,13 @@ export interface Conversation {
   threadId: string;
   assistantId: string;
   externalUserId: string; // ID do usuário no ManyChat
-  status: "active" | "completed" | "abandoned";
+  status: "active" | "completed" | "abandoned" | "expired";
   startedAt: number;
   lastActivity: number;
-  autoDeleteAt: number; // 24h após última atividade
+  autoDeleteAt: number; // timestamp para auto-delete
+  expiresIn?: number; // minutos até expirar (padrão: 60)
+  messageCount?: number; // contador de mensagens
+  maxMessages?: number; // máximo de mensagens antes de encerrar
 }
 
 export interface DatabaseStructure {
