@@ -21,7 +21,7 @@ router.post(
         child(clientsRef, `${clientId}/assistants/${assistantId}`)
       );
       if (!assistantSnapshot.exists()) {
-        res.status(404).json({ error: "Assistente não encontrado." });
+        res.status(404).json({ error: "Assistent not found." });
         return;
       }
 
@@ -33,7 +33,7 @@ router.post(
         (func: any) => func.name === functionName
       );
       if (!targetFunction) {
-        res.status(404).json({ error: "Função não encontrada." });
+        res.status(404).json({ error: "Function not found." });
         return;
       }
 
@@ -53,9 +53,9 @@ router.post(
 
       res.json({ result });
     } catch (error) {
-      console.error("Erro ao executar função:", error);
+      console.error("Error executing function: ", error);
       res.status(500).json({
-        message: "Erro ao executar função",
+        message: "Error executing function",
         error: error instanceof Error ? error.message : error,
       });
     }
@@ -216,7 +216,7 @@ async function executeVerificarEstoque(args: any, functionConfig: any) {
     }
 
     if (!estoque) {
-      return { erro: "Produto não encontrado" };
+      return { erro: "Producto not found" };
     }
 
     return {
@@ -226,7 +226,7 @@ async function executeVerificarEstoque(args: any, functionConfig: any) {
       disponivel_para_venda: estoque.quantidade - estoque.reservados,
     };
   } catch (error) {
-    throw new Error(`Erro ao verificar estoque: ${error}`);
+    throw new Error(`Error verifying stock: ${error}`);
   }
 }
 
@@ -248,7 +248,7 @@ async function executeCustomFunction(args: any, functionConfig: any) {
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(
-        `Erro na requisição: ${error.response?.status} - ${error.response?.statusText}`
+        `Error in request: ${error.response?.status} - ${error.response?.statusText}`
       );
     }
     throw error;
@@ -324,7 +324,7 @@ async function executeAnalisarImagem(args: any, functionConfig: any) {
         };
       }
     } catch (parseError) {
-      console.warn("Erro ao parsear resposta da análise:", parseError);
+      console.warn("Error parsing JSON response", parseError);
       analise = {
         categoria: "produto",
         caracteristicas: ["produto identificado"],
@@ -377,7 +377,7 @@ async function executeAnalisarImagem(args: any, functionConfig: any) {
 
         produtos_similares = resultadoBusca.produtos || [];
       } catch (buscaError) {
-        console.warn("Erro ao buscar produtos similares:", buscaError);
+        console.warn("Error searching for similar products", buscaError);
       }
     }
 

@@ -27,7 +27,7 @@ export const authenticateToken = async (
 
     next();
   } catch (error) {
-    console.error("Erro ao verificar o token:", JSON.stringify(error, null, 2));
+    console.error("Error verifying token:", JSON.stringify(error, null, 2));
     res.status(401).json({ message: "Invalid token", error });
     return;
   }
@@ -45,7 +45,7 @@ const isTokenStructureValid = (token: string): boolean => {
 const verifyTokenWithTimeout = async (token: string, timeout: number) => {
   return new Promise((resolve, reject) => {
     const timeoutHandle = setTimeout(() => {
-      reject(new Error("Tempo limite excedido ao verificar o token."));
+      reject(new Error("Timeout exceeded while verifying token."));
     }, timeout);
 
     admin

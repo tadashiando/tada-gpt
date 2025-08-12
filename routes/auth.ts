@@ -20,11 +20,11 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     if (error instanceof Error) {
       console.error(
-        "Login falhou, verifique suas credenciais",
+        "Login failed, check your credentials",
         error
       );
       res.status(500).json({
-        message: "Login falhou, verifique suas credenciais",
+        message: "Login failed, check your credentials",
         error: error.message,
       });
     } else {

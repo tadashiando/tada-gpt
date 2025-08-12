@@ -33,13 +33,13 @@ router.post(
       // Verificar se cliente existe
       const clientSnapshot = await get(child(clientsRef, clientId));
       if (!clientSnapshot.exists()) {
-        res.status(404).json({ error: "Cliente não encontrado." });
+        res.status(404).json({ error: "Client not found." });
         return;
       }
 
       // Validações básicas
       if (!name || !instructions) {
-        res.status(400).json({ error: "Nome e instruções são obrigatórios." });
+        res.status(400).json({ error: "Name and instructions are required." });
         return;
       }
 
@@ -91,12 +91,12 @@ router.post(
           ...assistantData,
           openaiData: openaiAssistant,
         },
-        message: "Assistente criado com sucesso!",
+        message: "Assistent created successfully!",
       });
     } catch (error) {
-      console.error("Erro ao criar assistente:", error);
+      console.error("Error creating assistant:", error);
       res.status(500).json({
-        message: "Erro ao criar assistente",
+        message: "Error creating assistant",
         error: error instanceof Error ? error.message : error,
       });
     }
@@ -114,7 +114,7 @@ router.get(
       // Verificar se cliente existe
       const clientSnapshot = await get(child(clientsRef, clientId));
       if (!clientSnapshot.exists()) {
-        res.status(404).json({ error: "Cliente não encontrado." });
+        res.status(404).json({ error: "Client not found." });
         return;
       }
 
@@ -134,9 +134,9 @@ router.get(
         assistants: assistantList,
       });
     } catch (error) {
-      console.error("Erro ao listar assistentes:", error);
+      console.error("Error listing assistants:", error);
       res.status(500).json({
-        message: "Erro ao listar assistentes",
+        message: "Error listing assistants",
         error: error instanceof Error ? error.message : error,
       });
     }
@@ -156,7 +156,7 @@ router.get(
         child(clientsRef, `${clientId}/assistants/${assistantId}`)
       );
       if (!assistantSnapshot.exists()) {
-        res.status(404).json({ error: "Assistente não encontrado." });
+        res.status(404).json({ error: "Assistent not found." });
         return;
       }
 
@@ -180,13 +180,13 @@ router.get(
           id: assistantId,
           clientId,
           ...assistantData,
-          warning: "Não foi possível buscar dados atualizados do OpenAI",
+          warning: "Failed to retrieve data from AI LLM provider",
         });
       }
     } catch (error) {
-      console.error("Erro ao buscar assistente:", error);
+      console.error("Error fetching assistant:", error);
       res.status(500).json({
-        message: "Erro ao buscar assistente",
+        message: "Error fetching assistant",
         error: error instanceof Error ? error.message : error,
       });
     }
@@ -207,7 +207,7 @@ router.put(
         child(clientsRef, `${clientId}/assistants/${assistantId}`)
       );
       if (!assistantSnapshot.exists()) {
-        res.status(404).json({ error: "Assistente não encontrado." });
+        res.status(404).json({ error: "Assistent not found." });
         return;
       }
 
@@ -238,14 +238,14 @@ router.put(
       );
 
       res.json({
-        message: "Assistente atualizado com sucesso!",
+        message: "Assistent updated successfully!",
         assistantId,
         clientId,
       });
     } catch (error) {
-      console.error("Erro ao atualizar assistente:", error);
+      console.error("Error updating assistant:", error);
       res.status(500).json({
-        message: "Erro ao atualizar assistente",
+        message: "Error updating assistant",
         error: error instanceof Error ? error.message : error,
       });
     }
@@ -265,7 +265,7 @@ router.delete(
         child(clientsRef, `${clientId}/assistants/${assistantId}`)
       );
       if (!assistantSnapshot.exists()) {
-        res.status(404).json({ error: "Assistente não encontrado." });
+        res.status(404).json({ error: "Assistent not found." });
         return;
       }
 
@@ -275,7 +275,7 @@ router.delete(
       try {
         await client.beta.assistants.del(assistantData.openaiAssistantId);
       } catch (openaiError) {
-        console.warn("Erro ao deletar assistente do OpenAI:", openaiError);
+        console.warn("Error deleting assistant from AI LLM provider", openaiError);
         // Continua mesmo se não conseguir deletar do OpenAI
       }
 
@@ -286,14 +286,14 @@ router.delete(
       });
 
       res.json({
-        message: "Assistente deletado com sucesso!",
+        message: "Assistent deleted successfully!",
         assistantId,
         clientId,
       });
     } catch (error) {
-      console.error("Erro ao deletar assistente:", error);
+      console.error("Error deleting assistant:", error);
       res.status(500).json({
-        message: "Erro ao deletar assistente",
+        message: "Error deleting assistant",
         error: error instanceof Error ? error.message : error,
       });
     }

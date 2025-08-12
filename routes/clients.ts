@@ -60,9 +60,9 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
 
     res.json({ clients: clientList });
   } catch (error) {
-    console.error("Erro ao listar clientes:", error);
+    console.error("Error fetching clients:", error);
     res.status(500).json({
-      message: "Erro ao listar clientes",
+      message: "Error fetching clients",
       error: error instanceof Error ? error.message : error,
     });
   }
@@ -79,7 +79,7 @@ router.get(
       const client = snapshot.val();
 
       if (!client) {
-        res.status(404).json({ error: "Cliente não encontrado." });
+        res.status(404).json({ error: "Client not found." });
         return;
       }
 
@@ -88,9 +88,9 @@ router.get(
         ...client,
       });
     } catch (error) {
-      console.error("Erro ao buscar cliente:", error);
+      console.error("Error fetching client:", error);
       res.status(500).json({
-        message: "Erro ao buscar cliente",
+        message: "Error fetching client",
         error: error instanceof Error ? error.message : error,
       });
     }
@@ -109,7 +109,7 @@ router.put(
       // Verificar se cliente existe
       const snapshot = await get(child(clientsRef, clientId));
       if (!snapshot.exists()) {
-        res.status(404).json({ error: "Cliente não encontrado." });
+        res.status(404).json({ error: "Client not found." });
         return;
       }
 
@@ -117,13 +117,13 @@ router.put(
       await update(child(clientsRef, `${clientId}/info`), updates);
 
       res.json({
-        message: "Cliente atualizado com sucesso!",
+        message: "Client updated successfully!",
         clientId,
       });
     } catch (error) {
-      console.error("Erro ao atualizar cliente:", error);
+      console.error("Error updating client:", error);
       res.status(500).json({
-        message: "Erro ao atualizar cliente",
+        message: "Error updating client",
         error: error instanceof Error ? error.message : error,
       });
     }

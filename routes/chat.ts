@@ -19,17 +19,17 @@ router.post("/", async (req: Request, res: Response) => {
 
     // Validação básica e interrupção caso necessário
     if (!message || typeof message !== "string") {
-      res.status(400).json({ error: "Mensagem inválida ou ausente." });
+      res.status(400).json({ error: "Invalid or missing message." });
       return;
     }
 
     if (history && !Array.isArray(history)) {
-      res.status(400).json({ error: "Histórico inválido." });
+      res.status(400).json({ error: "Invalid history." });
       return;
     }
 
     if (!model || typeof model !== "string") {
-      res.status(400).json({ error: "Modelo inválido ou ausente." });
+      res.status(400).json({ error: "Invalid or missing model." });
       return;
     }
 
@@ -68,9 +68,9 @@ router.post("/", async (req: Request, res: Response) => {
     res.json({ response, history: messages });
   } catch (error) {
     if (error instanceof Error) {
-      console.error("Erro ao enviar mensagem", error);
+      console.error("Error sending message", error);
       res.status(500).json({
-        message: "Erro ao enviar mensagem",
+        message: "Error sending message",
         error: error.message,
       });
     } else {
@@ -86,17 +86,17 @@ router.post("/assistant", async (req: Request, res: Response) => {
 
     // Validação básica e interrupção caso necessário
     if (!message || typeof message !== "string") {
-      res.status(400).json({ error: "Mensagem inválida ou ausente." });
+      res.status(400).json({ error: "Invalid or missing message." });
       return;
     }
 
     if (!thread || typeof thread !== "string") {
-      res.status(400).json({ error: "Thread inválido ou ausente." });
+      res.status(400).json({ error: "Invalid or missing thread." });
       return;
     }
 
     if (!assistant || typeof assistant !== "string") {
-      res.status(400).json({ error: "Id de assistente inválido ou ausente." });
+      res.status(400).json({ error: "Invalid or missing assistant ID." });
       return;
     }
 
@@ -129,15 +129,15 @@ router.post("/assistant", async (req: Request, res: Response) => {
     } else {
       console.log("Run status:", run.status);
       res.status(500).json({
-        error: "Erro interno ao se comunicar com o GPT.",
+        error: "Internal error communicating with LLM.",
         status: run.status,
       });
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.error("Erro ao enviar mensagem ao assistente", error);
+      console.error("Error sending message to assistant", error);
       res.status(500).json({
-        message: "Erro ao enviar mensagem ao assistente",
+        message: "Error sending message to assistant",
         error: error.message,
       });
     } else {
@@ -166,7 +166,7 @@ async function handleFunctionCalling(
         const functionName = toolCall.function.name;
         const functionArgs = JSON.parse(toolCall.function.arguments);
 
-        console.log(`Executando função: ${functionName}`, functionArgs);
+        console.log(`Executing function: ${functionName}`, functionArgs);
 
         try {
           // Executar a função usando nossa rota de function calling
@@ -183,13 +183,13 @@ async function handleFunctionCalling(
           });
         } catch (functionError) {
           console.error(
-            `Erro ao executar função ${functionName}:`,
+            `Error executing function ${functionName}:`,
             functionError
           );
           toolOutputs.push({
             tool_call_id: toolCall.id,
             output: JSON.stringify({
-              erro: `Falha ao executar ${functionName}: ${functionError}`,
+              erro: `Failed to execute ${functionName}: ${functionError}`,
             }),
           });
         }
@@ -209,14 +209,14 @@ async function handleFunctionCalling(
       res.json({ history: reversedMessages });
     } else {
       res.status(500).json({
-        error: "Erro após executar funções",
+        error: "Error after executing functions",
         status: finalRun.status,
       });
     }
   } catch (error) {
-    console.error("Erro no function calling:", error);
+    console.error("Error in function calling: ", error);
     res.status(500).json({
-      error: "Erro ao processar function calling",
+      error: "Error processing function calling",
       details: error instanceof Error ? error.message : error,
     });
   }
@@ -234,7 +234,7 @@ async function executeFunctionCall(
     child(clientsRef, `${clientId}/assistants/${assistantId}`)
   );
   if (!assistantSnapshot.exists()) {
-    throw new Error("Assistente não encontrado");
+    throw new Error("Assistant not found");
   }
 
   const assistantData = assistantSnapshot.val();
@@ -245,7 +245,7 @@ async function executeFunctionCall(
     (func: any) => func.name === functionName
   );
   if (!targetFunction) {
-    throw new Error("Função não encontrada");
+    throw new Error("Function not found");
   }
 
   // Executar a função baseada no tipo (reutilizando a lógica da rota function-calling)
@@ -330,7 +330,7 @@ async function executeBuscarProdutos(args: any, functionConfig: any) {
       filtros_aplicados: { categoria, preco_max, disponivel },
     };
   } catch (error) {
-    throw new Error(`Erro ao buscar produtos: ${error}`);
+    throw new Error(`Error searching for products: ${error}`);
   }
 }
 
@@ -373,7 +373,7 @@ async function executeVerificarEstoque(args: any, functionConfig: any) {
     }
 
     if (!estoque) {
-      return { erro: "Produto não encontrado" };
+      return { erro: "Product not found" };
     }
 
     return {
@@ -383,7 +383,7 @@ async function executeVerificarEstoque(args: any, functionConfig: any) {
       disponivel_para_venda: estoque.quantidade - estoque.reservados,
     };
   } catch (error) {
-    throw new Error(`Erro ao verificar estoque: ${error}`);
+    throw new Error(`Error verifying stock: ${error}`);
   }
 }
 
@@ -404,7 +404,7 @@ async function executeCustomFunction(args: any, functionConfig: any) {
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(
-        `Erro na requisição: ${error.response?.status} - ${error.response?.statusText}`
+        `Error in request: ${error.response?.status} - ${error.response?.statusText}`
       );
     }
     throw error;

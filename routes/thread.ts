@@ -30,9 +30,9 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
     res.json({ thread });
   } catch (error) {
     if (error instanceof Error) {
-      console.error("Erro ao criar a Thread no Firebase", error);
+      console.error("Error creating thread", error);
       res.status(500).json({
-        message: "Erro ao criar a Thread no Firebase",
+        message: "Error creating thread",
         error: error.message,
       });
     } else {
@@ -51,9 +51,9 @@ router.get("/:id", async (req: Request, res: Response) => {
     res.json({ thread, messages });
   } catch (error) {
     if (error instanceof Error) {
-      console.error("Erro ao recuperar a Thread", error);
+      console.error("Error retrieving thread", error);
       res.status(500).json({
-        message: "Erro ao recuperar a Thread",
+        message: "Error retrieving thread",
         error: error.message,
       });
     } else {
@@ -73,9 +73,9 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (error instanceof Error) {
-      console.error("Erro ao recuperar todas as Threads de Firebase", error);
+      console.error("Error retrieving all threads", error);
       res.status(500).json({
-        message: "Erro ao recuperar todas as Threads de Firebase",
+        message: "Error retrieving all threads",
         error: error.message,
       });
     } else {
@@ -95,9 +95,9 @@ router.delete(
       res.json({ thread });
     } catch (error) {
       if (error instanceof Error) {
-        console.error("Erro ao deletar thread.", error);
+        console.error("Error deleting thread", error);
         res.status(500).json({
-          message: "Erro ao deletar thread.",
+          message: "Error deleting thread",
           error: error.message,
         });
       } else {

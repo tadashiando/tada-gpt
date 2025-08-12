@@ -5,7 +5,6 @@ import { database } from "../firebase";
 import { authenticateToken } from "../middlewares/authentication";
 
 const router = express.Router();
-// Configuração do OpenAI
 const client = new OpenAi({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -16,7 +15,7 @@ router.post("/", async (req: Request, res: Response) => {
     const { name, instructions, description, tools, model } = req.body;
 
     if (!model || typeof model !== "string") {
-      res.status(400).json({ error: "Modelo inválido ou ausente." });
+      res.status(400).json({ error: "Invalid or missing model." });
       return;
     }
 
@@ -31,9 +30,9 @@ router.post("/", async (req: Request, res: Response) => {
     res.json({ assistant });
   } catch (error) {
     if (error instanceof Error) {
-      console.error("Erro ao criar um novo assistente", error);
+      console.error("Error creating new assistant", error);
       res.status(500).json({
-        message: "Erro ao criar um novo assistente",
+        message: "Error creating new assistant",
         error: error.message,
       });
     } else {
@@ -78,11 +77,11 @@ router.get(
     } catch (error) {
       if (error instanceof Error) {
         console.error(
-          "Erro ao recuperar um assistente com suas threads",
+          "Error retrieving assistant with its threads",
           error
         );
         res.status(500).json({
-          message: "Erro ao recuperar um assistente com suas threads",
+          message: "Error retrieving assistant with its threads",
           error: error.message,
         });
       } else {
@@ -100,11 +99,11 @@ router.get("/", async (req: Request, res: Response) => {
   } catch (error) {
     if (error instanceof Error) {
       console.error(
-        "Erro ao recuperar uma lista de assistentes",
+        "Error retrieving assistants list",
         error
       );
       res.status(500).json({
-        message: "Erro ao recuperar uma lista de assistentes",
+        message: "Error retrieving assistants list",
         error: error.message,
       });
     } else {

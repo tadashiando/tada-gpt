@@ -30,7 +30,7 @@ router.post(
       // Verificar se cliente e assistente existem
       const clientSnapshot = await get(child(clientsRef, clientId));
       if (!clientSnapshot.exists()) {
-        res.status(404).json({ error: "Cliente não encontrado." });
+        res.status(404).json({ error: "Client not found." });
         return;
       }
 
@@ -38,7 +38,7 @@ router.post(
         child(clientsRef, `${clientId}/assistants/${assistantId}`)
       );
       if (!assistantSnapshot.exists()) {
-        res.status(404).json({ error: "Assistente não encontrado." });
+        res.status(404).json({ error: "Assistent not found." });
         return;
       }
 
@@ -66,7 +66,7 @@ router.post(
         res.json({
           conversationId: activeConversation,
           threadId: conv.threadId,
-          message: "Conversa ativa encontrada. Continuando...",
+          message: "Active conversation found. Continuing:",
           expiresAt: conv.autoDeleteAt,
           timeRemaining: Math.max(0, conv.autoDeleteAt - Date.now()),
         });
@@ -103,15 +103,15 @@ router.post(
       res.status(201).json({
         conversationId,
         threadId: thread.id,
-        message: "Nova conversa iniciada com sucesso!",
+        message: "New conversation started successfully!",
         expiresAt,
         timeRemaining: expiresIn * 60 * 1000,
         maxMessages,
       });
     } catch (error) {
-      console.error("Erro ao iniciar conversa:", error);
+      console.error("Error starting conversation: ", error);
       res.status(500).json({
-        message: "Erro ao iniciar conversa",
+        message: "Error starting conversation",
         error: error instanceof Error ? error.message : error,
       });
     }
@@ -127,7 +127,7 @@ router.post(
       const { message } = req.body;
 
       if (!message || typeof message !== "string") {
-        res.status(400).json({ error: "Mensagem inválida ou ausente." });
+        res.status(400).json({ error: "Invalid message." });
         return;
       }
 
@@ -136,7 +136,7 @@ router.post(
         child(clientsRef, `${clientId}/conversations/${conversationId}`)
       );
       if (!conversationSnapshot.exists()) {
-        res.status(404).json({ error: "Conversa não encontrada." });
+        res.status(404).json({ error: "Conversation not found." });
         return;
       }
 
@@ -144,7 +144,7 @@ router.post(
 
       // Verificar se conversa ainda está ativa
       if (conversation.status !== "active") {
-        res.status(400).json({ error: "Conversa não está ativa." });
+        res.status(400).json({ error: "Unactive conversation." });
         return;
       }
 
@@ -157,7 +157,7 @@ router.post(
             status: "expired",
           }
         );
-        res.status(400).json({ error: "Conversa expirou." });
+        res.status(400).json({ error: "Expired conversation." });
         return;
       }
 
@@ -169,7 +169,7 @@ router.post(
             status: "completed",
           }
         );
-        res.status(400).json({ error: "Limite de mensagens atingido." });
+        res.status(400).json({ error: "Message limit exceeded." });
         return;
       }
 
@@ -214,7 +214,7 @@ router.post(
         );
       } else {
         res.status(500).json({
-          error: "Erro ao processar mensagem",
+          error: "Error processing message.",
           status: run.status,
         });
         return;
@@ -243,9 +243,9 @@ router.post(
         },
       });
     } catch (error) {
-      console.error("Erro ao enviar mensagem:", error);
+      console.error("Error sending message: ", error);
       res.status(500).json({
-        message: "Erro ao enviar mensagem",
+        message: "Error sending message",
         error: error instanceof Error ? error.message : error,
       });
     }
@@ -270,13 +270,13 @@ router.post(
       );
 
       res.json({
-        message: "Conversa encerrada com sucesso!",
+        message: "Conversation ended successfully",
         reason,
       });
     } catch (error) {
-      console.error("Erro ao encerrar conversa:", error);
+      console.error("Error ending conversation: ", error);
       res.status(500).json({
-        message: "Erro ao encerrar conversa",
+        message: "Error ending conversation",
         error: error instanceof Error ? error.message : error,
       });
     }
@@ -309,7 +309,7 @@ router.delete(
             await client.beta.threads.del(conversation.threadId);
           } catch (openaiError) {
             console.warn(
-              `Erro ao deletar thread ${conversation.threadId}:`,
+              `Error deleting thread ${conversation.threadId}:`,
               openaiError
             );
           }
@@ -341,13 +341,13 @@ router.delete(
       await Promise.all(cleanupPromises);
 
       res.json({
-        message: "Limpeza concluída",
+        message: "Conversations cleaned successfully",
         conversationsRemoved: cleaned,
       });
     } catch (error) {
-      console.error("Erro na limpeza:", error);
+      console.error("Error cleaning conversations: ", error);
       res.status(500).json({
-        message: "Erro na limpeza",
+        message: "Error cleaning conversations",
         error: error instanceof Error ? error.message : error,
       });
     }
@@ -386,7 +386,7 @@ async function handleFunctionCalling(
         toolOutputs.push({
           tool_call_id: toolCall.id,
           output: JSON.stringify({
-            erro: `Falha ao executar ${functionName}: ${functionError}`,
+            erro: `Failure executing ${functionName}: ${functionError}`,
           }),
         });
       }
@@ -403,7 +403,7 @@ async function handleFunctionCalling(
     const messages = await client.beta.threads.messages.list(threadId);
     return messages.data.reverse();
   } else {
-    throw new Error(`Erro após executar funções: ${finalRun.status}`);
+    throw new Error(`Error in function calling: ${finalRun.status}`);
   }
 }
 
@@ -418,7 +418,7 @@ async function executeFunctionCall(
     child(clientsRef, `${clientId}/assistants/${assistantId}`)
   );
   if (!assistantSnapshot.exists()) {
-    throw new Error("Assistente não encontrado");
+    throw new Error("Assistent not found");
   }
 
   const assistantData = assistantSnapshot.val();
@@ -428,7 +428,7 @@ async function executeFunctionCall(
   );
 
   if (!targetFunction) {
-    throw new Error("Função não encontrada");
+    throw new Error("Function not found");
   }
 
   // Executar função (mock data)
@@ -507,7 +507,7 @@ async function executeFunctionCall(
     };
 
     const estoque = estoques[functionArgs.produto_id as keyof typeof estoques];
-    return estoque || { erro: "Produto não encontrado" };
+    return estoque || { erro: "Product not found" };
   }
 
   if (functionName === "analisar_imagem_produto") {
@@ -545,7 +545,7 @@ async function executeFunctionCall(
     };
   }
 
-  throw new Error("Função não implementada");
+  throw new Error("Function not found");
 }
 
 export default router;
